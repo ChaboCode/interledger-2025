@@ -5,6 +5,24 @@ services:
   ## OLLAMA - Instance
 
   ## WHATSAPP - WAHA
+  waha:
+    restart: always
+    image: devlikeapro/waha:latest
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '10'
+    ports:
+      - '127.0.0.1:3000:3000/tcp'
+    volumes:
+      - './waha/sessions:/app/.sessions'
+      - './waha/media:/app/.media'
+    env_file:
+      - ./waha/.env
 
   ## WHATSAPP - Service
 
