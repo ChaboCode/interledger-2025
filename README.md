@@ -12,16 +12,16 @@ This repository implements a distributed system composed of three primary capabi
 3. Product data management via a REST API backed by MongoDB
    Each capability is encapsulated in an independent service, orchestrated together with Docker Compose. The architecture is designed with extensibility in mind — e.g., messaging-triggered payments, unified data persistence, and LLM integration via OLLAMA in future roadmap.
 
-(o゜▽゜)o☆
+(o゜▽゜)o☆ 
 
 °°°°°°Service Components°°°°°°
-Service			| Container Name 	| Port 				| Purpose
-WAHA Service		| waha 			| 3000 (localhost-bound) 	| WhatsApp API integration: session management, media handling
-Interledger Service 	| interledger_service 	| 3005 				| Payment processing using Interledger / Open Payments
-Data Service 		| mongo_service 	| 3000 (separate compose) 	| RESTful Product CRUD API backed by MongoDB
-MongoDB 		| mongodb 		| 27017 			| Document database for product data
-OLLAMA LLM		| OLLAMA		| 11434				| Intelligent automation into the messaging/payment loop
-OLLAMA Service		| ollama-service	| 3000				| Frontend and service communication for the LLM processing
+Service			      | Container Name 	      | Port 				         | Purpose
+WAHA Service		   | waha 			         | 3000 (localhost-bound) 	| WhatsApp API integration: session management, media handling
+Interledger Service 	| interledger_service 	| 3005 				         | Payment processing using Interledger / Open Payments
+Data Service 		   | mongo_service 	      | 3000 (separate compose) 	| RESTful Product CRUD API backed by MongoDB
+MongoDB 		         | mongodb 		         | 27017 			            | Document database for product data
+OLLAMA LLM		      | OLLAMA		            | 11434				         | Intelligent automation into the messaging/payment loop
+OLLAMA Service		   | ollama-service	      | 3000				         | Frontend and service communication for the LLM processing
 
 Note: A multi-instance WhatsApp orchestrator, and a unified data / transaction storage service.
 
