@@ -14,10 +14,10 @@ RUN npm install
 COPY . .
 
 # Expose port 3000 to the outside world
-EXPOSE 3000
+EXPOSE 8080
 
 # Command to run the application
-CMD ["node", "test.js"]
+CMD ["node", "service.js"]
 
 #⣿⣿⣿⡇⣿⣿⣿⣿⣿⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⡏⢸⣿⡆⣿⡇⠶⠟⣛⣩
 #⣿⣿⣿⠃⣿⣿⣿⣿⡿⠀⠟⢛⣛⣛⢻⣿⣿⣿⣿⢰⡇⠀⣶⠀⣦⣬⡁⢻⣿⣿

@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 (async () => {
   try {
-    await connectMongo(process.env.MONGO_URI);
+    await connectMongo(process.env.MONGO_URI || "mongodb://appuser:appsecret@mongo:27017/tienda");
     app.listen(PORT, () => console.log(`🚀 API escuchando en http://localhost:${PORT}`));
   } catch (e) {
     console.error("❌ No se pudo iniciar la API:", e);

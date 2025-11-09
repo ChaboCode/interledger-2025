@@ -1,8 +1,25 @@
 version: "3.9"
 services: 
   ## OLLAMA - Service
+  ollama-service:
+    build:
+      context: ./ollama-service
+      dockerfile: Dockerfile
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - MODEL_NAME=qwen3:1.7b
+    ports:
+      - "3001:8080"
+    restart: unless-stopped
 
   ## OLLAMA - Instance
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: always
 
   ## WHATSAPP - WAHA
   waha:
@@ -25,6 +42,13 @@ services:
       - ./waha/.env
 
   ## WHATSAPP - Service
+  waha-service:
+    depends_on:
+      - waha
+    build:
+      context: ./waha-service
+      dockerfile: Dockerfile
+    container_name: waha_service
 
   ## INTERLEDGER - Service
   interledger:
@@ -36,6 +60,32 @@ services:
       - "3005:3000"
     restart: always
   ##   ☆*: .｡. o(≧▽≦)o .｡.:*☆
+
   ## DATA - MongoDB instance
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: tienda
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
 
   ## DATA - Service
+  mongo-service:
+    depends_on:
+      - mongo
+    build:
+      context: ./mongo-service
+      dockerfile: Dockerfile
+    restart: always
+
+
+volumes:
+  ollama_data:
+  mongo_data:

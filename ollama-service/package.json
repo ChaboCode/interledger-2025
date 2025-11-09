@@ -1,0 +1,21 @@
+{
+  "name": "ollama-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "pokemon-agent.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/core": "^1.0.3",
+    "@langchain/ollama": "^1.0.0",
+    "axios": "^1.13.2",
+    "express": "^5.1.0",
+    "langchain": "^1.0.3",
+    "zod": "^4.1.12"
+  }
+}

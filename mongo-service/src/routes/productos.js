@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
       if (max) filter.precio.$lte = Number(max);
     }
 
-    const docs = await Producto.find(filter).lean();
+    const docs = await Producto.find().lean();
     res.json(docs);
   } catch (err) {
     console.error(err);

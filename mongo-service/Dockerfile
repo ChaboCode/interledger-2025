@@ -16,8 +16,11 @@ COPY . .
 # Expose port 3000 to the outside world
 EXPOSE 3000
 
+#ENV PORT=3000
+#ENV MONGO_URI=mongodb://admin:admin123@mongo:27017/
+
 # Command to run the application
-CMD ["node", "test.js"]
+CMD ["node", "src/index.js"]
 
 #⣿⣿⣿⡇⣿⣿⣿⣿⣿⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⡏⢸⣿⡆⣿⡇⠶⠟⣛⣩
 #⣿⣿⣿⠃⣿⣿⣿⣿⡿⠀⠟⢛⣛⣛⢻⣿⣿⣿⣿⢰⡇⠀⣶⠀⣦⣬⡁⢻⣿⣿
