@@ -6,7 +6,7 @@ app.use(express.json())
 
 function answer(msg) {
     const wahaData = {
-        session: 'default', chatId: '5214492862699@c.us', text: msg
+        session: 'default', chatId: '5214494288355@c.us', text: msg
     }
 
     console.log(msg)
@@ -38,7 +38,8 @@ app.post('/msg', async (req, res) => {
     const data = req.body
 
     if (data.event === 'message') {
-        const response = await axios.post('http://ollama-service:8080/pokeask', data)
+
+        const response = await axios.post('http://ollama-service:8080/inventory', data)
         console.log(response.data)
         await answer(response.data)
     }

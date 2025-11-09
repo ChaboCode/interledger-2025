@@ -1,150 +1,120 @@
-import http from 'http';
+import {createAuthenticatedClient, isFinalizedGrant} from "@interledger/open-payments";
+import express from 'express'
 
+const app = express()
 
-const port = 3000;
+app.use(express.json())
+app.use(express.urlencoded({extended: true}))
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Hello, Docker!");
-});
+const port = 3005;
 
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+const purchases = {}
 
-import { createAuthenticatedClient, isFinalizedGrant } from "@interledger/open-payments";
-import { error } from "console";
-import * as fs from "fs";
-import { isUtf8 } from "node:buffer";
-import * as readline from 'node:readline/promises';
-import { url } from 'node:inspector';
+app.post('/payment', async (req, res) => {
+    const amount = req.body.amount
+    const redirect = await firstPayment(amount)
+    res.status(200).json(redirect)
+})
 
-(async () => {
-  const privateKey = fs.readFileSync("private.key", "utf8");
-  const client = await createAuthenticatedClient({
+app.get('/finish', async (req, res) => {
+    const nonce = req.query.nonce
+    const purchase = purchases[nonce]
+    console.log(purchase)
+    await finishPayment(purchase)
+    res.status(200).write('Payment Finished Successfully. You should receive a confirmation via WhatsApp in an instance.')
+})
+
+const client = await createAuthenticatedClient({
     walletAddressUrl: "https://ilp.interledger-test.dev/tutia-dev",
     privateKey: 'private.key',
     keyId: "013676a1-e063-463a-b894-a4fec52be563",
-  });
+});
 
-  const customer = await client.walletAddress.get({
-    url: `https://ilp.interledger-test.dev/jor2`
-  })
-  const retailer = await client.walletAddress.get({
-    url: `https://ilp.interledger-test.dev/jor3`
-  })
-  const incomingPaymentGrant = await client.grant.request(
-        {
+async function firstPayment(value) {
+    const customer = await client.walletAddress.get({
+        url: `https://ilp.interledger-test.dev/jor2`
+    })
+    const retailer = await client.walletAddress.get({
+        url: `https://ilp.interledger-test.dev/jor3`
+    })
+    const incomingPaymentGrant = await client.grant.request({
         url: retailer.authServer,
+    }, {
+        access_token: {
+            access: [{
+                type: "incoming-payment", actions: ["create"],
+            }]
+        }
+    });
+
+    if (!isFinalizedGrant(incomingPaymentGrant)) {
+        throw new Error("se espera se finalice la concesion");
+    }
+    const incomingPayment = await client.incomingPayment.create({
+        url: retailer.resourceServer, accessToken: incomingPaymentGrant.access_token.value,
+    }, {
+        walletAddress: retailer.id, incomingAmount: {
+            assetCode: retailer.assetCode, assetScale: retailer.assetScale, value: `${value}`,
         },
-        {
-            access_token:{
-                access: [
-                    {
-                        type: "incoming-payment",
-                        actions: ["create"],
-                    }
-                ]
+    });
+    const customerQuoteGrant = await client.grant.request({
+        url: customer.authServer
+    }, {
+        access_token: {
+            access: [{
+                type: 'quote', actions: ['create']
+            }]
+        }
+    });
+    const customerQuote = await client.quote.create({
+        url: customer.resourceServer, accessToken: customerQuoteGrant.access_token.value
+    }, {
+        method: 'ilp', walletAddress: customer.id, receiver: incomingPayment.id
+    });
+    const nonce = Date.now()
+
+    const authPayment = await client.grant.request({
+        url: customer.authServer
+    }, {
+        access_token: {
+            access: [{
+                type: "outgoing-payment", actions: ["create"], limits: {
+                    debitAmount: customerQuote.debitAmount,
+                }, identifier: customer.id,
+            }]
+        }, interact: {
+            start: ['redirect'], finish: {
+                method: 'redirect', uri: `http://localhost:3005/finish?nonce=${nonce}`, // where to redirect the customer after they've completed the interaction
+                nonce: `${nonce}`
             }
         }
-    );
+    })
 
-    if(!isFinalizedGrant(incomingPaymentGrant)){
-        throw new error("se espera se finalice la concesion");
+    const purchase = {
+        authPayment, customer, customerQuote
     }
-  const incomingPayment = await client.incomingPayment.create(
-      {
-          url: retailer.resourceServer,
-          accessToken: incomingPaymentGrant.access_token.value,
-      },
-      {
-          walletAddress: retailer.id,
-          incomingAmount: {
-              assetCode: retailer.assetCode,
-              assetScale: retailer.assetScale,
-              value: `50000`,
-          },
-      }
-  );
-  const customerQuoteGrant = await client.grant.request(
-    {
-      url: customer.authServer
-    },
-    {
-      access_token: {
-        access: [
-          {
-            type: 'quote',
-            actions: ['create']
-          }
-        ]
-      }
+    purchases[nonce] = (purchase);
+    if (!isFinalizedGrant(authPayment)) {
+        console.log("XD")
     }
-  );
-  const customerQuote = await client.quote.create(
-    {
-      url: customer.resourceServer,
-      accessToken: customerQuoteGrant.access_token.value
-    },
-    {
-      method: 'ilp',
-      walletAddress: customer.id,
-      receiver: incomingPayment.id
-    }
-  );
-  const authPayment = await client.grant.request(
-    {
-      url: customer.authServer
-    },
-    {
-      access_token: {
-        access: [
-          {
-            type: "outgoing-payment",
-            actions: ["create"],
-            limits:{
-              debitAmount:customerQuote.debitAmount,
-            },
-            identifier: customer.id,
-          }
-        ]
-      },
-      interact: {
-        start: ['redirect'],
-        /*finish: {
-          method: 'redirect',
-          uri: 'https://paymentplatform.example/finish/{...}', // where to redirect the customer after they've completed the interaction
-          nonce: NONCE
-        }*/
-      }
-    }
-  );
-  if(!isFinalizedGrant(authPayment)){
-    console.log("XD")
-  }
-  console.log(authPayment);
-  await readline
-        .createInterface({
-            input: process.stdin,
-            output: process.stdout
-        })
-        .question("Press enter para salir del pago saliente")
+    console.log(authPayment);
+    return authPayment.interact.redirect
 
-  const finishPaymentGrant = await client.grant.continue(
-    {
-      url:authPayment.continue.uri,
-      accessToken: authPayment.continue.access_token.value
-    },
-  );
-  const finishPayment = await client.outgoingPayment.create(
-    {
-      url: customer.resourceServer,
-      accessToken: finishPaymentGrant.access_token.value
-    },
-    {
-      walletAddress: customer.id,
-      quoteId: customerQuote.id
-    }
-  )
-  console.log({finishPaymentGrant, finishPayment});
-})();
+}
+
+async function finishPayment(purchase) {
+    const {authPayment, customer, customerQuote} = purchase;
+    const finishPaymentGrant = await client.grant.continue({
+        url: authPayment.continue.uri, accessToken: authPayment.continue.access_token.value
+    },);
+    const finishPayment = await client.outgoingPayment.create({
+        url: customer.resourceServer, accessToken: finishPaymentGrant.access_token.value
+    }, {
+        walletAddress: customer.id, quoteId: customerQuote.id
+    })
+    console.log({finishPaymentGrant, finishPayment});
+}
+
+app.listen(port, () => {
+    console.log(`Listening on port ${port}`);
+})
