@@ -17,11 +17,14 @@ app.post('/payment', async (req, res) => {
 })
 
 app.get('/finish', async (req, res) => {
-    const nonce = req.query.nonce
+    const {nonce, interact_ref} = req.query
     const purchase = purchases[nonce]
     console.log(purchase)
-    await finishPayment(purchase)
-    res.status(200).write('Payment Finished Successfully. You should receive a confirmation via WhatsApp in an instance.')
+    await finishPayment({
+        ...purchase,
+        interact_ref,
+    })
+    res.status(200).send('Payment Finished Successfully. You should receive a confirmation via WhatsApp in an instance.')
 })
 
 const client = await createAuthenticatedClient({
@@ -54,7 +57,7 @@ async function firstPayment(value) {
         url: retailer.resourceServer, accessToken: incomingPaymentGrant.access_token.value,
     }, {
         walletAddress: retailer.id, incomingAmount: {
-            assetCode: retailer.assetCode, assetScale: retailer.assetScale, value: `${value}`,
+            assetCode: retailer.assetCode, assetScale: retailer.assetScale, value: `${value*100}`,
         },
     });
     const customerQuoteGrant = await client.grant.request({
@@ -84,7 +87,7 @@ async function firstPayment(value) {
             }]
         }, interact: {
             start: ['redirect'], finish: {
-                method: 'redirect', uri: `http://localhost:3005/finish?nonce=${nonce}`, // where to redirect the customer after they've completed the interaction
+                method: 'redirect', uri: `https://a07d0f32e965.ngrok-free.app/finish?nonce=${nonce}`, // where to redirect the customer after they've completed the interaction
                 nonce: `${nonce}`
             }
         }
@@ -103,10 +106,13 @@ async function firstPayment(value) {
 }
 
 async function finishPayment(purchase) {
-    const {authPayment, customer, customerQuote} = purchase;
+    const {authPayment, customer, customerQuote, interact_ref} = purchase;
+
     const finishPaymentGrant = await client.grant.continue({
         url: authPayment.continue.uri, accessToken: authPayment.continue.access_token.value
-    },);
+    },
+        {interact_ref}
+    );
     const finishPayment = await client.outgoingPayment.create({
         url: customer.resourceServer, accessToken: finishPaymentGrant.access_token.value
     }, {
